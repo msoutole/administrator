@@ -1,0 +1,151 @@
+/**
+ * JSON Schema for Administrator configuration
+ */
+
+export const configSchema = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  $id: 'https://github.com/msoutole/administrator/config-schema.json',
+  title: 'Administrator Configuration',
+  description: 'Configuration schema for Administrator repository analyzer',
+  type: 'object',
+  required: ['github'],
+  properties: {
+    github: {
+      type: 'object',
+      description: 'GitHub API configuration',
+      required: ['token'],
+      properties: {
+        token: {
+          type: 'string',
+          description: 'GitHub Personal Access Token',
+          minLength: 1,
+        },
+        apiVersion: {
+          type: 'string',
+          description: 'GitHub API version',
+          default: '2022-11-28',
+        },
+      },
+    },
+    analysis: {
+      type: 'object',
+      description: 'Analysis configuration',
+      properties: {
+        minQualityScore: {
+          type: 'number',
+          description: 'Minimum quality score threshold (0-100)',
+          minimum: 0,
+          maximum: 100,
+          default: 50,
+        },
+        maxReposPerBatch: {
+          type: 'number',
+          description: 'Maximum repositories to analyze per batch',
+          minimum: 1,
+          maximum: 100,
+          default: 10,
+        },
+        timeout: {
+          type: 'number',
+          description: 'Analysis timeout in milliseconds',
+          minimum: 1000,
+          default: 30000,
+        },
+        cache: {
+          type: 'object',
+          description: 'Cache configuration',
+          properties: {
+            enabled: {
+              type: 'boolean',
+              description: 'Enable caching',
+              default: true,
+            },
+            directory: {
+              type: 'string',
+              description: 'Cache directory path',
+              default: '.cache/administrator',
+            },
+            ttl: {
+              type: 'number',
+              description: 'Cache time-to-live in seconds',
+              minimum: 0,
+              default: 86400,
+            },
+          },
+        },
+      },
+    },
+    scoring: {
+      type: 'object',
+      description: 'Scoring configuration',
+      properties: {
+        weights: {
+          type: 'object',
+          description: 'Scoring dimension weights (must sum to 1.0)',
+          properties: {
+            codeQuality: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1,
+              default: 0.25,
+            },
+            documentation: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1,
+              default: 0.2,
+            },
+            testing: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1,
+              default: 0.2,
+            },
+            community: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1,
+              default: 0.15,
+            },
+            security: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1,
+              default: 0.15,
+            },
+            dependencies: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1,
+              default: 0.05,
+            },
+          },
+        },
+      },
+    },
+    output: {
+      type: 'object',
+      description: 'Output configuration',
+      properties: {
+        format: {
+          type: 'string',
+          description: 'Output format',
+          enum: ['markdown', 'json', 'html'],
+          default: 'markdown',
+        },
+        directory: {
+          type: 'string',
+          description: 'Output directory path',
+          default: './reports',
+        },
+        includeJson: {
+          type: 'boolean',
+          description: 'Include JSON export alongside other formats',
+          default: true,
+        },
+      },
+    },
+  },
+};
+
+export default configSchema;
