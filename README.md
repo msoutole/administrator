@@ -5,6 +5,7 @@
 **AI-powered CLI tool to analyze & classify GitHub repositories automatically**
 
 [![CI](https://github.com/msoutole/administrator/workflows/CI/badge.svg)](https://github.com/msoutole/administrator/actions)
+[![Repo Architect Analysis](https://github.com/msoutole/administrator/workflows/Repo%20Architect%20Pro%20Analysis/badge.svg)](https://github.com/msoutole/administrator/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D16.0.0-green.svg)](https://nodejs.org/)
@@ -594,6 +595,31 @@ npm run validate
 ```
 
 This runs: lint → format:check → test:coverage → build
+
+### Repository Health Monitoring
+
+This repository uses the **Repo Architect Pro Administrator** agent to automatically analyze and monitor repository health. The analysis runs:
+
+- On every push to `main` or `develop` branches
+- On pull requests to `main` or `develop` branches  
+- Weekly on Mondays at 9:00 AM UTC
+- Manually via workflow dispatch
+
+**The agent evaluates:**
+
+- 📚 **Documentation (20%)**: README, CHANGELOG, CONTRIBUTING files
+- ⚙️ **Automation (30%)**: CI/CD, tests, linting setup
+- 💎 **Code Quality (30%)**: ESLint, TypeScript, Prettier, code structure
+- 🔧 **Maintenance (20%)**: Recent activity, .gitignore, license
+
+**Health Scoring:**
+- **A (90-100)**: 💎 Core/Jóia - Excellent, production-ready
+- **B (80-89)**: 💎 Core/Jóia - Very good, minor improvements
+- **C (70-79)**: 🚧 WIP - Good, needs attention
+- **D (60-69)**: 🚧 WIP - Poor, significant improvements needed
+- **F (<60)**: 🧟 Zumbi - Critical, urgent work required
+
+View detailed analysis results in the [Actions tab](https://github.com/msoutole/administrator/actions/workflows/repo-architect-analysis.yml).
 
 ---
 
