@@ -4,17 +4,12 @@
 
 **AI-powered CLI tool to analyze & classify GitHub repositories automatically**
 
-![Administrator Logo](https://img.shields.io/badge/Administrator-Repository%20Analysis%20Engine-0066FF?style=for-the-badge&logo=github&logoColor=white)
-
-[![CI/CD](https://github.com/msoutole/administrator/workflows/CI/badge.svg?branch=main)](https://github.com/msoutole/administrator/actions?query=branch%3Amain)
-[![License: MIT](https://img.shields.io/badge/License-MIT-00C853.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D16.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Code Coverage](https://img.shields.io/badge/coverage-70%25%2B-4CAF50.svg)](./coverage)
-[![npm version](https://img.shields.io/npm/v/administrator?color=CB3837&logo=npm)](https://www.npmjs.com/package/administrator)
-[![npm downloads](https://img.shields.io/npm/dm/administrator?color=CB3837&logo=npm)](https://www.npmjs.com/package/administrator)
-
-**[Documentation](./docs) • [Quick Start](#-quick-start) • [Examples](#-examples) • [Contributing](./CONTRIBUTING.md) • [Changelog](./CHANGELOG.md)**
+[![CI](https://github.com/msoutole/administrator/workflows/CI/badge.svg)](https://github.com/msoutole/administrator/actions)
+[![Repo Architect Analysis](https://github.com/msoutole/administrator/workflows/Repo%20Architect%20Pro%20Analysis/badge.svg)](https://github.com/msoutole/administrator/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
+[![Node](https://img.shields.io/badge/Node-%3E%3D16.0.0-green.svg)](https://nodejs.org/)
+[![Coverage](https://img.shields.io/badge/coverage-70%25+-brightgreen.svg)](./coverage)
 
 </div>
 
@@ -690,6 +685,31 @@ npm run validate
 ```
 
 This runs: lint → format:check → test:coverage → build
+
+### Repository Health Monitoring
+
+This repository uses the **Repo Architect Pro Administrator** agent to automatically analyze and monitor repository health. The analysis runs:
+
+- On every push to `main` or `develop` branches
+- On pull requests to `main` or `develop` branches  
+- Weekly on Mondays at 9:00 AM UTC
+- Manually via workflow dispatch
+
+**The agent evaluates:**
+
+- 📚 **Documentation (20%)**: README, CHANGELOG, CONTRIBUTING files
+- ⚙️ **Automation (30%)**: CI/CD, tests, linting setup
+- 💎 **Code Quality (30%)**: ESLint, TypeScript, Prettier, code structure
+- 🔧 **Maintenance (20%)**: Recent activity, .gitignore, license
+
+**Health Scoring:**
+- **A (90-100)**: 💎 Core/Jóia - Excellent, production-ready
+- **B (80-89)**: 💎 Core/Jóia - Very good, minor improvements
+- **C (70-79)**: 🚧 WIP - Good, needs attention
+- **D (60-69)**: 🚧 WIP - Poor, significant improvements needed
+- **F (<60)**: 🧟 Zumbi - Critical, urgent work required
+
+View detailed analysis results in the [Actions tab](https://github.com/msoutole/administrator/actions/workflows/repo-architect-analysis.yml).
 
 ---
 

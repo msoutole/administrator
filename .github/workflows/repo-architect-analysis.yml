@@ -1,0 +1,305 @@
+name: Repo Architect Pro Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  analyze-repository:
+    name: Repository Architecture Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Repo Architect Pro Analysis
+        id: analysis
+        run: |
+          echo "## 🏗️ Análise Arquitetural: administrator" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Calculate Health Score
+          SCORE=0
+          
+          # Documentation (20%)
+          echo "### 📚 Documentação" >> $GITHUB_STEP_SUMMARY
+          if [ -f "README.md" ]; then
+            SCORE=$((SCORE + 10))
+            echo "- ✅ README.md presente" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ README.md ausente" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f "CHANGELOG.md" ]; then
+            SCORE=$((SCORE + 5))
+            echo "- ✅ CHANGELOG.md presente" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ CHANGELOG.md ausente" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f "CONTRIBUTING.md" ]; then
+            SCORE=$((SCORE + 5))
+            echo "- ✅ CONTRIBUTING.md presente" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ CONTRIBUTING.md ausente" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Automation (30%)
+          echo "### ⚙️ Automação" >> $GITHUB_STEP_SUMMARY
+          if [ -f ".github/workflows/ci.yml" ]; then
+            SCORE=$((SCORE + 15))
+            echo "- ✅ GitHub Actions CI configurado" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ GitHub Actions CI não configurado" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if grep -q "test" package.json; then
+            SCORE=$((SCORE + 10))
+            echo "- ✅ Testes automatizados configurados" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Testes automatizados não configurados" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if grep -q "lint" package.json; then
+            SCORE=$((SCORE + 5))
+            echo "- ✅ Linter configurado" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Linter não configurado" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Code Quality (30%)
+          echo "### 💎 Qualidade de Código" >> $GITHUB_STEP_SUMMARY
+          if [ -f ".eslintrc.js" ] || [ -f ".eslintrc.json" ] || [ -f ".eslintrc.yml" ]; then
+            SCORE=$((SCORE + 10))
+            echo "- ✅ ESLint configurado" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ ESLint não configurado" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f "tsconfig.json" ]; then
+            SCORE=$((SCORE + 10))
+            echo "- ✅ TypeScript configurado" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ TypeScript não configurado" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f ".prettierrc" ] || [ -f ".prettierrc.json" ] || [ -f ".prettierrc.yml" ]; then
+            SCORE=$((SCORE + 5))
+            echo "- ✅ Prettier configurado" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Prettier não configurado" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -d "src" ] || [ -d "lib" ]; then
+            SCORE=$((SCORE + 5))
+            echo "- ✅ Estrutura de pastas organizada" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Estrutura de pastas não padrão" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Maintenance (20%)
+          echo "### 🔧 Manutenção" >> $GITHUB_STEP_SUMMARY
+          
+          # Check last commit date
+          LAST_COMMIT_DAYS=$(( ($(date +%s) - $(git log -1 --format=%ct)) / 86400 ))
+          if [ $LAST_COMMIT_DAYS -lt 30 ]; then
+            SCORE=$((SCORE + 10))
+            echo "- ✅ Ativo (último commit: ${LAST_COMMIT_DAYS} dias atrás)" >> $GITHUB_STEP_SUMMARY
+          elif [ $LAST_COMMIT_DAYS -lt 90 ]; then
+            SCORE=$((SCORE + 5))
+            echo "- ⚠️ Moderadamente ativo (último commit: ${LAST_COMMIT_DAYS} dias atrás)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ Inativo (último commit: ${LAST_COMMIT_DAYS} dias atrás)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f ".gitignore" ]; then
+            SCORE=$((SCORE + 5))
+            echo "- ✅ .gitignore presente" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ .gitignore ausente" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f "LICENSE" ] || [ -f "LICENSE.md" ]; then
+            SCORE=$((SCORE + 5))
+            echo "- ✅ Licença definida" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Licença não definida" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Calculate final score and grade
+          echo "### 📊 Health Score: ${SCORE}/100" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $SCORE -ge 90 ]; then
+            GRADE="A"
+            CATEGORY="💎 Core/Jóia"
+            echo "**Grade:** ${GRADE} | **Categoria:** ${CATEGORY}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✨ **Excelente!** Repositório de alta qualidade." >> $GITHUB_STEP_SUMMARY
+          elif [ $SCORE -ge 80 ]; then
+            GRADE="B"
+            CATEGORY="💎 Core/Jóia"
+            echo "**Grade:** ${GRADE} | **Categoria:** ${CATEGORY}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "👍 **Muito Bom!** Algumas melhorias menores recomendadas." >> $GITHUB_STEP_SUMMARY
+          elif [ $SCORE -ge 70 ]; then
+            GRADE="C"
+            CATEGORY="🚧 WIP (Work in Progress)"
+            echo "**Grade:** ${GRADE} | **Categoria:** ${CATEGORY}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Bom!** Várias áreas necessitam atenção." >> $GITHUB_STEP_SUMMARY
+          elif [ $SCORE -ge 60 ]; then
+            GRADE="D"
+            CATEGORY="🚧 WIP (Work in Progress)"
+            echo "**Grade:** ${GRADE} | **Categoria:** ${CATEGORY}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Atenção!** Melhorias significativas são necessárias." >> $GITHUB_STEP_SUMMARY
+          else
+            GRADE="F"
+            CATEGORY="🧟 Zumbi"
+            echo "**Grade:** ${GRADE} | **Categoria:** ${CATEGORY}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚨 **Crítico!** O repositório necessita de trabalho urgente." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ Roadmap de Modernização" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for critical issues
+          CRITICAL_ISSUES=""
+          if [ ! -f ".gitignore" ]; then
+            echo "- [ ] **Imediato:** Criar .gitignore para evitar commit de arquivos desnecessários" >> $GITHUB_STEP_SUMMARY
+            CRITICAL_ISSUES="true"
+          fi
+          
+          if [ ! -f "README.md" ]; then
+            echo "- [ ] **Imediato:** Criar README.md com documentação básica" >> $GITHUB_STEP_SUMMARY
+            CRITICAL_ISSUES="true"
+          fi
+          
+          if ! grep -q "test" package.json; then
+            echo "- [ ] **Curto Prazo:** Configurar testes automatizados" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ ! -f "LICENSE" ] && [ ! -f "LICENSE.md" ]; then
+            echo "- [ ] **Curto Prazo:** Adicionar licença ao projeto" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ ! -f ".github/workflows/ci.yml" ]; then
+            echo "- [ ] **Curto Prazo:** Configurar GitHub Actions para CI/CD" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "- [ ] **Longo Prazo:** Manter dependências atualizadas" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] **Longo Prazo:** Aumentar cobertura de testes para 80%+" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Security check
+          echo "### 🔒 Verificação de Segurança" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for hardcoded secrets (basic check)
+          if git grep -E "(api[_-]?key|secret|password|token).*=.*['\"][a-zA-Z0-9]{20,}['\"]" -- '*.js' '*.ts' '*.json' '*.yml' '*.yaml' 2>/dev/null | grep -v "node_modules" | grep -v ".git" | grep -v "example" | head -1; then
+            echo "🚨 **ALERTA CRÍTICO:** Possíveis chaves de API ou senhas encontradas no código!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            CRITICAL_ISSUES="true"
+          else
+            echo "✅ Nenhum segredo hardcoded detectado" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Set output
+          echo "score=${SCORE}" >> $GITHUB_OUTPUT
+          echo "grade=${GRADE}" >> $GITHUB_OUTPUT
+          echo "category=${CATEGORY}" >> $GITHUB_OUTPUT
+          
+          # Exit with warning if score is too low
+          if [ $SCORE -lt 60 ]; then
+            echo "::warning::Repository health score is below 60. Please address the issues identified."
+            exit 0
+          fi
+      
+      - name: Check for dependency updates
+        run: |
+          echo "### 📦 Verificação de Dependências" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "package.json" ]; then
+            # Check if package-lock.json exists and is recent
+            if [ -f "package-lock.json" ]; then
+              PACKAGE_LOCK_AGE=$(( ($(date +%s) - $(stat -c %Y package-lock.json)) / 86400 ))
+              if [ $PACKAGE_LOCK_AGE -gt 90 ]; then
+                echo "⚠️ package-lock.json tem mais de 90 dias. Considere atualizar dependências." >> $GITHUB_STEP_SUMMARY
+              else
+                echo "✅ Dependências atualizadas recentemente (${PACKAGE_LOCK_AGE} dias atrás)" >> $GITHUB_STEP_SUMMARY
+              fi
+            else
+              echo "⚠️ package-lock.json não encontrado" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Create analysis badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          SCORE="${{ steps.analysis.outputs.score }}"
+          GRADE="${{ steps.analysis.outputs.grade }}"
+          
+          # Badge color based on grade
+          if [ "$GRADE" = "A" ]; then
+            COLOR="brightgreen"
+          elif [ "$GRADE" = "B" ]; then
+            COLOR="green"
+          elif [ "$GRADE" = "C" ]; then
+            COLOR="yellow"
+          elif [ "$GRADE" = "D" ]; then
+            COLOR="orange"
+          else
+            COLOR="red"
+          fi
+          
+          echo "Repository Health Score: ${SCORE}/100 (Grade: ${GRADE})" > repo-health.txt
+          echo "Badge Color: ${COLOR}" >> repo-health.txt
+      
+      - name: Upload analysis results
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-architect-analysis
+          path: |
+            repo-health.txt
+          retention-days: 90
