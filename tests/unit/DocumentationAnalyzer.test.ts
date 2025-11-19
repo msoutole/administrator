@@ -33,7 +33,8 @@ npm install
 Example usage here.
 `;
 
-      mockGitHubClient.hasFile = jest.fn()
+      mockGitHubClient.hasFile = jest
+        .fn()
         .mockResolvedValueOnce(true) // README.md
         .mockResolvedValueOnce(true) // CONTRIBUTING.md
         .mockResolvedValueOnce(true) // LICENSE

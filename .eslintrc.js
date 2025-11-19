@@ -3,7 +3,6 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2020,
     sourceType: 'module',
-    project: './tsconfig.json',
     tsconfigRootDir: __dirname,
   },
   extends: [
@@ -26,7 +25,7 @@ module.exports = {
     es2020: true,
     jest: true
   },
-  ignorePatterns: ['dist', 'node_modules', 'coverage', '*.js'],
+  ignorePatterns: ['dist', 'node_modules', 'coverage', '*.js', '**/*.d.ts'],
   overrides: [
     {
       files: ['tests/**/*.ts'],

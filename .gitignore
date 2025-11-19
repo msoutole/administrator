@@ -10,6 +10,9 @@ dist/
 build/
 *.tsbuildinfo
 
+# TypeScript declaration files in tests
+tests/**/*.d.ts
+
 # Environment variables
 .env
 .env.local
