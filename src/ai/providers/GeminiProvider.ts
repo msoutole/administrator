@@ -3,6 +3,10 @@
  */
 
 import { AIProvider, AIAnalysisRequest, AIAnalysisResponse } from '../AIProvider';
+import {
+  GeminiCompletionResponse,
+  isGeminiError,
+} from '../ApiResponseTypes';
 
 export class GeminiProvider implements AIProvider {
   private apiKey: string;
@@ -43,11 +47,14 @@ export class GeminiProvider implements AIProvider {
       );
 
       if (!response.ok) {
-        const error = (await response.json()) as any;
-        throw new Error(`Gemini API error: ${error.error?.message || response.statusText}`);
+        const error = (await response.json()) as unknown;
+        if (isGeminiError(error)) {
+          throw new Error(`Gemini API error: ${error.error.message}`);
+        }
+        throw new Error(`Gemini API error: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as GeminiCompletionResponse;
 
       if (!data.candidates || data.candidates.length === 0) {
         throw new Error('No response from Gemini API');
@@ -55,7 +62,7 @@ export class GeminiProvider implements AIProvider {
 
       const result = data.candidates[0].content.parts[0].text;
       const tokensUsed =
-        data.usageMetadata?.promptTokenCount + data.usageMetadata?.candidatesTokenCount;
+        data.usage_metadata.prompt_token_count + data.usage_metadata.candidates_token_count;
 
       return {
         result,

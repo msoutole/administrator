@@ -37,15 +37,15 @@
   },
   "dependencies": {
     "@octokit/rest": "^20.0.2",
-    "dotenv": "^16.3.1",
-    "zod": "^3.22.4",
     "chalk": "^4.1.2",
     "commander": "^11.1.0",
-    "ora": "^5.4.1"
+    "dotenv": "^16.3.1",
+    "ora": "^5.4.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",
-    "@types/node": "^20.10.6",
+    "@types/node": "^20.19.25",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "eslint": "^8.56.0",

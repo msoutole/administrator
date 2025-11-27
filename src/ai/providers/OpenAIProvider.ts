@@ -3,6 +3,10 @@
  */
 
 import { AIProvider, AIAnalysisRequest, AIAnalysisResponse } from '../AIProvider';
+import {
+  OpenAICompletionResponse,
+  isOpenAIError,
+} from '../ApiResponseTypes';
 
 export class OpenAIProvider implements AIProvider {
   private apiKey: string;
@@ -41,15 +45,18 @@ export class OpenAIProvider implements AIProvider {
       });
 
       if (!response.ok) {
-        const error = (await response.json()) as any;
-        throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
+        const error = (await response.json()) as unknown;
+        if (isOpenAIError(error)) {
+          throw new Error(`OpenAI API error: ${error.error.message}`);
+        }
+        throw new Error(`OpenAI API error: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as OpenAICompletionResponse;
 
       return {
         result: data.choices[0].message.content,
-        tokensUsed: data.usage?.total_tokens,
+        tokensUsed: data.usage.total_tokens,
         model: data.model,
         provider: this.getProviderName(),
       };

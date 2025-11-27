@@ -3,6 +3,10 @@
  */
 
 import { AIProvider, AIAnalysisRequest, AIAnalysisResponse } from '../AIProvider';
+import {
+  AnthropicCompletionResponse,
+  isAnthropicError,
+} from '../ApiResponseTypes';
 
 export class AnthropicProvider implements AIProvider {
   private apiKey: string;
@@ -41,17 +45,18 @@ export class AnthropicProvider implements AIProvider {
       });
 
       if (!response.ok) {
-        const error = (await response.json()) as any;
-        throw new Error(
-          `Anthropic API error: ${error.error?.message || response.statusText}`
-        );
+        const error = (await response.json()) as unknown;
+        if (isAnthropicError(error)) {
+          throw new Error(`Anthropic API error: ${error.error.message}`);
+        }
+        throw new Error(`Anthropic API error: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as AnthropicCompletionResponse;
 
       return {
         result: data.content[0].text,
-        tokensUsed: data.usage?.input_tokens + data.usage?.output_tokens,
+        tokensUsed: data.usage.input_tokens + data.usage.output_tokens,
         model: data.model,
         provider: this.getProviderName(),
       };

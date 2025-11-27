@@ -150,7 +150,10 @@ export class ConfigManager {
       if (error instanceof z.ZodError) {
         throw new Error(`Configuration validation failed: ${error.message}`);
       }
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(String(error));
     }
   }
 

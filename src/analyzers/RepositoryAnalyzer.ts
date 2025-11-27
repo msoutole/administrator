@@ -6,6 +6,10 @@ import { Config, AnalysisResult, BatchAnalysisResult } from '../types';
 import { ConfigManager } from '../config/ConfigManager';
 import { GitHubClient } from '../utils/GitHubClient';
 import { DocumentationAnalyzer } from './DocumentationAnalyzer';
+import { SecurityAnalyzer } from './SecurityAnalyzer';
+import { DependencyAnalyzer } from './DependencyAnalyzer';
+import { CodeComplexityAnalyzer } from './CodeComplexityAnalyzer';
+import { CommunityAnalyzer } from './CommunityAnalyzer';
 import { ScoringEngine } from './ScoringEngine';
 import { parseRepositoryUrl } from '../utils/helpers';
 
@@ -13,6 +17,10 @@ export class RepositoryAnalyzer {
   private config: Config;
   private githubClient: GitHubClient;
   private documentationAnalyzer: DocumentationAnalyzer;
+  private securityAnalyzer: SecurityAnalyzer;
+  private dependencyAnalyzer: DependencyAnalyzer;
+  private codeComplexityAnalyzer: CodeComplexityAnalyzer;
+  private communityAnalyzer: CommunityAnalyzer;
   private scoringEngine: ScoringEngine;
 
   constructor(config?: Partial<Config>) {
@@ -26,6 +34,10 @@ export class RepositoryAnalyzer {
       this.githubClient,
       this.config.ai
     );
+    this.securityAnalyzer = new SecurityAnalyzer(this.githubClient);
+    this.dependencyAnalyzer = new DependencyAnalyzer(this.githubClient);
+    this.codeComplexityAnalyzer = new CodeComplexityAnalyzer(this.githubClient);
+    this.communityAnalyzer = new CommunityAnalyzer(this.githubClient);
     this.scoringEngine = new ScoringEngine(this.config.scoring?.weights);
   }
 
@@ -38,50 +50,27 @@ export class RepositoryAnalyzer {
       // Fetch repository info
       const repoInfo = await this.githubClient.getRepositoryInfo(repository);
 
-      // Analyze documentation
-      const docMetrics = await this.documentationAnalyzer.analyze(owner, name);
-
-      // Analyze testing
-      const testingMetrics = {
-        hasTests: await this.hasTests(owner, name),
-        hasCICD: await this.hasCICD(owner, name),
-        ciStatus: 'unknown' as const,
-      };
-
-      // Analyze community
-      const contributors = await this.githubClient.getContributors(owner, name);
-      const communityMetrics = {
-        contributors,
-        hasCodeOfConduct: await this.githubClient.hasFile(owner, name, 'CODE_OF_CONDUCT.md'),
-        hasIssueTemplates: await this.hasIssueTemplates(owner, name),
-        hasPRTemplates: await this.hasPRTemplates(owner, name),
-        communityHealthScore: this.calculateCommunityHealth(contributors, repoInfo.stars),
-      };
-
-      // Analyze security
-      const securityMetrics = {
-        hasSecurityPolicy: await this.githubClient.hasFile(owner, name, 'SECURITY.md'),
-        vulnerabilities: 0,
-        dependabotEnabled: false,
-        secretsExposed: 0,
-        securityScore: 75,
-      };
-
-      // Analyze code quality
+      // Fetch languages and calculate lines of code in parallel with other initial data
       const languages = await this.githubClient.getLanguages(owner, name);
       const totalLines = Object.values(languages).reduce((sum, lines) => sum + lines, 0);
-      const codeQualityMetrics = {
-        linesOfCode: totalLines,
-        maintainabilityIndex: 75,
-      };
+      const contributors = await this.githubClient.getContributors(owner, name);
 
-      // Analyze dependencies
-      const dependencyMetrics = {
-        totalDependencies: 0,
-        outdatedDependencies: 0,
-        deprecatedDependencies: 0,
-        dependencyHealth: 80,
-      };
+      // Run all analyses in parallel
+      const [
+        docMetrics,
+        testingMetrics,
+        communityMetrics,
+        securityMetrics,
+        codeQualityMetrics,
+        dependencyMetrics,
+      ] = await Promise.all([
+        this.documentationAnalyzer.analyze(owner, name),
+        this.analyzeTestingMetrics(owner, name),
+        this.communityAnalyzer.analyze(owner, name, contributors, repoInfo.stars),
+        this.securityAnalyzer.analyze(owner, name),
+        this.codeComplexityAnalyzer.analyze(owner, name, totalLines),
+        this.dependencyAnalyzer.analyze(owner, name),
+      ]);
 
       // Calculate scores
       const metrics = {
@@ -119,15 +108,24 @@ export class RepositoryAnalyzer {
     const results: AnalysisResult[] = [];
     const errors: Array<{ repository: string; error: string }> = [];
 
-    for (const repo of toAnalyze) {
-      try {
-        const result = await this.analyze(repo);
-        results.push(result);
-      } catch (error) {
-        errors.push({
-          repository: repo,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
+    // Process with configurable concurrency (default 3)
+    const concurrency = 3;
+    for (let i = 0; i < toAnalyze.length; i += concurrency) {
+      const batch = toAnalyze.slice(i, i + concurrency);
+      const batchResults = await Promise.allSettled(
+        batch.map(repo => this.analyze(repo))
+      );
+
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j];
+        if (result.status === 'fulfilled') {
+          results.push(result.value);
+        } else {
+          errors.push({
+            repository: batch[j],
+            error: result.reason instanceof Error ? result.reason.message : 'Unknown error',
+          });
+        }
       }
     }
 
@@ -140,8 +138,33 @@ export class RepositoryAnalyzer {
     };
   }
 
+  private async analyzeTestingMetrics(
+    owner: string,
+    repo: string
+  ): Promise<{ hasTests: boolean; hasCICD: boolean; ciStatus: 'passing' | 'failing' | 'unknown' }> {
+    const [hasTests, hasCICD] = await Promise.all([
+      this.hasTests(owner, repo),
+      this.hasCICD(owner, repo),
+    ]);
+
+    return {
+      hasTests,
+      hasCICD,
+      ciStatus: 'unknown', // Would require additional API calls to determine actual status
+    };
+  }
+
   private async hasTests(owner: string, repo: string): Promise<boolean> {
-    const testPaths = ['test/', 'tests/', '__tests__/', 'spec/'];
+    const testPaths = [
+      'test/',
+      'tests/',
+      '__tests__/',
+      'spec/',
+      'test.js',
+      'test.ts',
+      'tests.js',
+      'tests.ts',
+    ];
     for (const path of testPaths) {
       if (await this.githubClient.hasFile(owner, repo, path)) {
         return true;
@@ -151,33 +174,41 @@ export class RepositoryAnalyzer {
   }
 
   private async hasCICD(owner: string, repo: string): Promise<boolean> {
-    const ciPaths = ['.github/workflows/', '.gitlab-ci.yml', '.travis.yml', 'circle.yml'];
+    // Check for all major CI/CD platforms
+    const ciPaths = [
+      // GitHub Actions
+      '.github/workflows/',
+      '.github/workflows/ci.yml',
+      '.github/workflows/ci.yaml',
+      '.github/workflows/test.yml',
+      '.github/workflows/test.yaml',
+      // GitLab CI
+      '.gitlab-ci.yml',
+      // Travis CI
+      '.travis.yml',
+      '.travis.yaml',
+      // Circle CI
+      '.circleci/config.yml',
+      'circle.yml',
+      // Jenkins
+      'Jenkinsfile',
+      // AppVeyor
+      'appveyor.yml',
+      // Azure Pipelines
+      'azure-pipelines.yml',
+      'azure-pipelines.yaml',
+      // Drone CI
+      '.drone.yml',
+      // Buildkite
+      '.buildkite/pipeline.yml',
+    ];
+
     for (const path of ciPaths) {
       if (await this.githubClient.hasFile(owner, repo, path)) {
         return true;
       }
     }
     return false;
-  }
-
-  private async hasIssueTemplates(owner: string, repo: string): Promise<boolean> {
-    return await this.githubClient.hasFile(owner, repo, '.github/ISSUE_TEMPLATE');
-  }
-
-  private async hasPRTemplates(owner: string, repo: string): Promise<boolean> {
-    const prPaths = ['.github/PULL_REQUEST_TEMPLATE.md', '.github/pull_request_template.md'];
-    for (const path of prPaths) {
-      if (await this.githubClient.hasFile(owner, repo, path)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private calculateCommunityHealth(contributors: number, stars: number): number {
-    const contributorScore = Math.min(contributors / 10, 1) * 50;
-    const popularityScore = Math.min(stars / 100, 1) * 50;
-    return Math.round(contributorScore + popularityScore);
   }
 }
 

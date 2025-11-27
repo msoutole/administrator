@@ -96,7 +96,7 @@ program
 
       if (options.file) {
         const content = await fs.readFile(options.file, 'utf-8');
-        repositories = content.split('\n').filter((line) => line.trim());
+        repositories = content.split('\n').filter((line: string) => line.trim());
       } else if (options.repos) {
         repositories = options.repos;
       } else {
